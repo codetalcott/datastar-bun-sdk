@@ -1,6 +1,6 @@
 # Datastar Bun SDK
 
-A Bun-optimized SDK for interacting with Datastar services. This SDK provides a TypeScript interface for Datastar's REST API and Server-Sent Events (SSE) capabilities.
+A Bun-optimized SDK for interacting with Datastar services. This SDK provides a TypeScript interface for Datastar's realtime (SSE) hypermedia capabilities.
 
 ## Features
 
