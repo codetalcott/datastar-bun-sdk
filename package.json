@@ -1,12 +1,51 @@
 {
-  "name": "datastar-bun-sdk",
-  "module": "index.ts",
+  "name": "@starfederation/datastar-bun-sdk",
+  "version": "0.1.0",
+  "description": "A Bun-optimized SDK for Datastar services",
+  "module": "dist/index.js",
   "type": "module",
-  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": false,
+  "keywords": [
+    "datastar",
+    "sdk",
+    "bun",
+    "typescript",
+    "sse",
+    "server-sent-events"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "bun run clean && bun build ./src/index.ts --outdir ./dist && tsc --emitDeclarationOnly",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "dev": "bun --watch src/index.ts",
+    "prepublishOnly": "bun run build"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "rimraf": "^5.0.5"
   },
   "peerDependencies": {
     "typescript": "^5"
-  }
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/starfederation/datastar-bun-sdk.git"
+  },
+  "author": "Star Federation",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/starfederation/datastar-bun-sdk/issues"
+  },
+  "homepage": "https://github.com/starfederation/datastar-bun-sdk#readme"
 }
