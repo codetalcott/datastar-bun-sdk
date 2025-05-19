@@ -19,6 +19,20 @@ This directory contains documentation for the DataStar library, organized to hel
 
 - **[stop_overcomplicating_it.md](./stop_overcomplicating_it.md)** - Philosophy and guidance on simple, efficient usage patterns
 
+- **[overview.md](./overview.md)** - High-level overview of DataStar's architecture and concepts
+
+- **[attribute_plugins.md](./attribute_plugins.md)** - Complete reference for all data-* attributes and their usage
+
+- **[action_plugins.md](./action_plugins.md)** - Reference for all @action helpers and their parameters
+
+- **[sdks.md](./sdks.md)** - Information on available SDKs for different platforms and languages
+
+- **[sse_events.md](./sse_events.md)** - Detailed documentation on Server-Sent Events implementation
+
+- **[custom_builds.md](./custom_builds.md)** - Instructions for creating customized DataStar builds
+
+- **[security.md](./security.md)** - Security considerations and best practices
+
 ## Key Concepts
 
 ### Core Features
