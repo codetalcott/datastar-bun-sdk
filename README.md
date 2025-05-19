@@ -212,6 +212,34 @@ Check out the [examples](./examples) directory for more complete usage examples:
 - [Simple Usage](./examples/simple-usage.ts): Basic CRUD and SSE usage
 - [Advanced SSE Usage](./examples/advanced-sse-usage.ts): Detailed SSE event handling
 
+## Testing
+
+### Unit Tests
+
+Run the unit tests with:
+
+```bash
+bun test
+```
+
+### Compliance Tests
+
+This SDK can be tested against the official Datastar SDK test suite to ensure compatibility:
+
+```bash
+# Start the test server only
+bun run test:server
+
+# Run the full compliance test suite
+bun run test:compliance
+```
+
+The compliance tests will:
+1. Clone the official Datastar test repository
+2. Start the test server
+3. Run the official test suite against the server
+4. Report the results
+
 ## License
 
 MIT
