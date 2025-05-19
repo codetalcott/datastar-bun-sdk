@@ -1,7 +1,7 @@
 {
-  "name": "@starfederation/datastar-bun-sdk",
+  "name": "datastar-bun-sdk",
   "version": "0.1.0",
-  "description": "A Bun-optimized SDK for Datastar services",
+  "description": "A Bun-optimized SDK for Datastar",
   "module": "dist/index.js",
   "type": "module",
   "main": "dist/index.js",
@@ -42,12 +42,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/starfederation/datastar-bun-sdk.git"
+    "url": "git+https://github.com/codetalcott/datastar-bun-sdk.git"
   },
-  "author": "Star Federation",
+  "author": "wim talcott",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/starfederation/datastar-bun-sdk/issues"
+    "url": "https://github.com/codetalcott/datastar-bun-sdk/issues"
   },
-  "homepage": "https://github.com/starfederation/datastar-bun-sdk#readme"
+  "homepage": "https://github.com/codetalcott/datastar-bun-sdk#readme"
 }

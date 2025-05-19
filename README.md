@@ -17,16 +17,16 @@ A Bun-optimized SDK for interacting with Datastar services. This SDK provides a 
 
 ```bash
 # Using bun
-bun add @starfederation/datastar-bun-sdk
+bun add codetalcott/datastar-bun-sdk
 
 # Using npm
-npm install @starfederation/datastar-bun-sdk
+npm install codetalcott/datastar-bun-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { DatastarBunSDK } from '@starfederation/datastar-bun-sdk';
+import { DatastarBunSDK } from 'codetalcott/datastar-bun-sdk';
 
 // Initialize the SDK
 const sdk = new DatastarBunSDK({
@@ -188,7 +188,7 @@ import {
   DatastarAuthenticationError,
   DatastarConnectionError,
   DatastarSSEError
-} from '@starfederation/datastar-bun-sdk';
+} from 'codetalcott/datastar-bun-sdk';
 
 try {
   const record = await sdk.getRecord('items', 'non-existent-id');
