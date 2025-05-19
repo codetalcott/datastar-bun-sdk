@@ -190,7 +190,7 @@ const server: Server = Bun.serve({
             
             if (data.events && Array.isArray(data.events)) {
               // Process each event in the events array
-              responseBody = await processEvents(sdk, data.events);
+              responseBody = await processEvents(sdk, data.events as any[]);
             } else {
               responseBody = formatSSE({
                 error: 'Invalid request format: missing events array'

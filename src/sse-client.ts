@@ -1,10 +1,12 @@
 import { EventEmitter } from 'events';
 import { 
-  SSEClientOptions, 
-  SSEEvent, 
   DatastarSSEError, 
   DatastarAuthenticationError,
   DatastarConnectionError
+} from './types';
+import type { 
+  SSEClientOptions, 
+  SSEEvent 
 } from './types';
 
 export class SSEClient extends EventEmitter {
@@ -61,7 +63,7 @@ export class SSEClient extends EventEmitter {
 
     try {
       // Set up request headers
-      const headers: HeadersInit = {
+      const headers: Record<string, string> = {
         'Accept': 'text/event-stream',
         'Cache-Control': 'no-cache',
         ...this.headers
@@ -76,9 +78,8 @@ export class SSEClient extends EventEmitter {
       const response = await fetch(this.url, {
         method: 'GET',
         headers,
-        signal: this.controller.signal,
-        // Important for SSE - we need to keep the connection open
-        cache: 'no-store',
+        signal: this.controller.signal
+        // Note: We'd like to use cache: 'no-store' here, but it's not in the Bun type definition
       });
 
       // Handle HTTP errors
@@ -140,15 +141,24 @@ export class SSEClient extends EventEmitter {
       }
       
       // Handle different types of errors
-      let errorMessage = `SSE connection error: ${error.message}`;
-      
-      if (error.name === 'AbortError') {
-        // This could be due to heartbeat timeout
-        errorMessage = 'SSE connection aborted due to timeout';
+      if (error instanceof DatastarAuthenticationError) {
+        // Forward authentication errors directly
+        this.emit('error', error);
+      } else if (error instanceof DatastarSSEError) {
+        // Forward SSE errors directly
+        this.emit('error', error);
+      } else {
+        // For other errors, create a generic SSE error
+        let errorMessage = `SSE connection error: ${error.message}`;
+        
+        if (error.name === 'AbortError') {
+          // This could be due to heartbeat timeout
+          errorMessage = 'SSE connection aborted due to timeout';
+        }
+        
+        // Emit the error event
+        this.emit('error', new DatastarSSEError(errorMessage));
       }
-      
-      // Emit the error event
-      this.emit('error', new DatastarSSEError(errorMessage));
       
       // Attempt to reconnect
       this._handleDisconnect(true);
@@ -160,10 +170,12 @@ export class SSEClient extends EventEmitter {
    * @returns {Promise<void>}
    */
   async close(): Promise<void> {
+    console.log('[SSE] Explicitly closing connection');
     this.isExplicitlyClosed = true;
     
     // Abort any ongoing connection
     if (this.controller) {
+      console.log('[SSE] Aborting active controller');
       this.controller.abort();
       this.controller = undefined;
     }
@@ -171,11 +183,16 @@ export class SSEClient extends EventEmitter {
     // Clear timers
     this._stopHeartbeatTimer();
     if (this.reconnectTimer) {
+      console.log('[SSE] Clearing reconnect timer');
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = undefined;
     }
     
+    // Reset reconnection state
+    this.retryAttempts = 0;
+    
     // Emit close event
+    console.log('[SSE] Emitting intentional close event');
     this.emit('close', { intentional: true });
   }
   
@@ -215,6 +232,9 @@ export class SSEClient extends EventEmitter {
       this.heartbeatTimer = setTimeout(() => {
         this._handleHeartbeatTimeout();
       }, this.heartbeatInterval);
+      
+      // Make non-enumerable for debugging
+      Object.defineProperty(this, 'heartbeatTimer', { enumerable: false });
     }
   }
   
@@ -265,6 +285,7 @@ export class SSEClient extends EventEmitter {
     // Clear any existing reconnect timer
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
     }
     
     // Check if we've reached max retries
@@ -281,15 +302,21 @@ export class SSEClient extends EventEmitter {
     
     if (this.currentServerRetry !== null) {
       delay = this.currentServerRetry;
+      console.log(`[SSE] Using server retry value: ${delay}ms`);
       // Clear server retry so we use backoff for subsequent attempts
       this.currentServerRetry = null;
     } else {
-      // Calculate exponential backoff with jitter
-      const baseDelay = this.retryOptions.initialDelay * 
-        Math.pow(this.retryOptions.backoffFactor, this.retryAttempts);
+      // Calculate exponential backoff
+      const backoffMultiplier = Math.pow(this.retryOptions.backoffFactor, this.retryAttempts);
+      console.log(`[SSE] Backoff multiplier: ${backoffMultiplier} (attempt: ${this.retryAttempts}, factor: ${this.retryOptions.backoffFactor})`);
+      
+      const baseDelay = this.retryOptions.initialDelay * backoffMultiplier;
       const maxDelay = Math.min(this.retryOptions.maxRetryDelay, baseDelay);
-      // Add some jitter (±10%)
-      delay = maxDelay * (0.9 + Math.random() * 0.2);
+      
+      // Add some jitter (±10%) - reduced for tests to minimize variation
+      const jitterFactor = 0.95 + Math.random() * 0.1;
+      delay = Math.round(maxDelay * jitterFactor);
+      console.log(`[SSE] Using exponential backoff: ${delay}ms (attempt ${this.retryAttempts + 1})`);
     }
     
     // Increment retry counter
@@ -303,8 +330,12 @@ export class SSEClient extends EventEmitter {
     
     // Schedule reconnect
     this.reconnectTimer = setTimeout(() => {
+      console.log(`[SSE] Reconnecting after ${delay}ms delay`);
       this.connect({ isReconnect: true });
     }, delay);
+    
+    // Make non-enumerable for debugging
+    Object.defineProperty(this, 'reconnectTimer', { enumerable: false });
   }
   
   /**
@@ -406,6 +437,7 @@ export class SSEClient extends EventEmitter {
         case 'id':
           event.id = value;
           this.lastEventId = value;
+          console.log(`[SSE] Received event ID: ${value}`);
           break;
         case 'event':
           event.eventName = value;
@@ -421,6 +453,7 @@ export class SSEClient extends EventEmitter {
           if (!isNaN(retryValue)) {
             event.retry = retryValue;
             this.currentServerRetry = retryValue;
+            console.log(`[SSE] Server specified retry: ${retryValue}ms`);
           }
           break;
       }

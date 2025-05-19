@@ -235,6 +235,7 @@ bun run test:compliance
 ```
 
 The compliance tests will:
+
 1. Clone the official Datastar test repository
 2. Start the test server
 3. Run the official test suite against the server
