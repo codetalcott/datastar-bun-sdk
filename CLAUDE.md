@@ -49,6 +49,7 @@ The SDK follows a TDD approach as outlined in `sdk-tdd-plan.md`. The core archit
 3. **Error Handling** - A hierarchy of custom error types for different error conditions.
 
 Key Components:
+
 - `src/index.ts` - Main SDK entry point
 - `src/sse-client.ts` - Server-Sent Events handling
 - `src/types.ts` - TypeScript interfaces and types
@@ -56,6 +57,7 @@ Key Components:
 ## Development Phases
 
 Development follows the TDD plan with these key phases:
+
 1. Project setup & test infrastructure
 2. Core SDK initialization & configuration
 3. Authentication & API calls
@@ -71,6 +73,7 @@ Development follows the TDD plan with these key phases:
 ## Type Definitions
 
 The SDK makes use of several key types:
+
 - `DatastarSDKOptions` - Configuration options for the SDK
 - `DatastarQueryParams` - Parameters for querying records
 - Custom error types for handling different error conditions

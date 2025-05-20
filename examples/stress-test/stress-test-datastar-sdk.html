@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datastar Bun SDK - Stress Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="number"], textarea, select { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        button:hover { background-color: #0056b3; }
+        .disabled-button { background-color: #ccc; cursor: not-allowed; }
+        pre { background-color: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; }
+        .log-area { border: 1px solid #ccc; padding: 10px; min-height: 100px; max-height: 400px; overflow-y: scroll; background-color: #fdfdfd; margin-top: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .grid-item { padding: 15px; border: 1px solid #e0e0e0; border-radius: 4px; }
+        .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        .status-ok { background-color: green; }
+        .status-error { background-color: red; }
+        .status-neutral { background-color: orange; }
+        .sse-messages { list-style-type: none; padding-left: 0; }
+        .sse-messages li { padding: 8px; border-bottom: 1px solid #eee; }
+        .sse-messages li:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Datastar Bun SDK - Stress Test Page</h1>
+
+        <div class="section" id="config-section">
+            <h2>Configuration</h2>
+            <label for="apiBaseUrl">API Base URL (e.g., /api/stress):</label>
+            <input type="text" id="apiBaseUrl" value="/api/stress">
+            <label for="authToken">Auth Token (Bearer):</label>
+            <input type="text" id="authToken" value="test-token-123">
+            <label for="defaultCollection">Default Collection Name:</label>
+            <input type="text" id="defaultCollection" value="stress_test_items">
+        </div>
+
+        <div class="grid">
+            <div class="grid-item section" id="crud-section">
+                <h2>CRUD Operations</h2>
+                <label for="crudCollection">Collection:</label>
+                <input type="text" id="crudCollection" placeholder="Uses default if empty">
+                <label for="crudRecordId">Record ID:</label>
+                <input type="text" id="crudRecordId" placeholder="e.g., 123">
+                <label for="crudPayload">Payload (JSON):</label>
+                <textarea id="crudPayload" rows="3">{ "name": "Test Item", "value": 100 }</textarea>
+                <button onclick="createRecord()">Create</button>
+                <button onclick="getRecord()">Get</button>
+                <button onclick="updateRecord()">Update</button>
+                <button onclick="deleteRecord()">Delete</button>
+                <h3>CRUD Response:</h3>
+                <pre id="crudResponse"></pre>
+            </div>
+
+            <div class="grid-item section" id="list-section">
+                <h2>List Records</h2>
+                <label for="listCollection">Collection:</label>
+                <input type="text" id="listCollection" placeholder="Uses default if empty">
+                <label for="listQuery">Query Params (e.g., limit=10&offset=0&sortBy=name):</label>
+                <input type="text" id="listQuery" placeholder="limit=10&offset=0">
+                <button onclick="listRecords()">List Records</button>
+                <h3>List Response:</h3>
+                <pre id="listResponse"></pre>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="grid-item section" id="large-payload-section">
+                <h2>Large Payload Test</h2>
+                <label for="largePayloadCollection">Collection:</label>
+                <input type="text" id="largePayloadCollection" placeholder="Uses default if empty">
+                <label for="largePayloadSize">Approx. Payload Size (KB):</label>
+                <input type="number" id="largePayloadSize" value="100">
+                <button onclick="createLargeRecord()">Create Large Record</button>
+                <button onclick="getLargeRecord()">Get Last Large Record</button>
+                <input type="text" id="largeRecordId" placeholder="Created Large Record ID" readonly>
+                <h3>Large Payload Response:</h3>
+                <pre id="largePayloadResponse"></pre>
+            </div>
+
+            <div class="grid-item section" id="concurrency-section">
+                <h2>Concurrency Test</h2>
+                <label for="concurrencyCollection">Collection:</label>
+                <input type="text" id="concurrencyCollection" placeholder="Uses default if empty">
+                <label for="concurrencyRecordIdPrefix">Record ID Prefix (for GETs):</label>
+                <input type="text" id="concurrencyRecordIdPrefix" value="item_">
+                <label for="numConcurrentRequests">Number of Concurrent GET Requests:</label>
+                <input type="number" id="numConcurrentRequests" value="10">
+                <button onclick="runConcurrencyTest()">Run GET Concurrency Test</button>
+                <h3>Concurrency Results:</h3>
+                <div id="concurrencyResults" class="log-area"></div>
+            </div>
+        </div>
+        
+        <div class="section" id="sse-section">
+            <h2>Server-Sent Events (SSE) Test</h2>
+            <button id="connectSseButton" onclick="connectSSE()">Connect SSE</button>
+            <button id="disconnectSseButton" onclick="disconnectSSE()" disabled>Disconnect SSE</button>
+            <p>Status: <span id="sseStatusIndicator" class="status-indicator status-neutral"></span><span id="sseStatus">Idle</span></p>
+            <h3>SSE Messages:</h3>
+            <ul id="sseMessages" class="sse-messages log-area"></ul>
+        </div>
+
+        <div class="section" id="error-simulation-section">
+            <h2>Error Simulation</h2>
+            <label for="errorCollection">Collection (for 404):</label>
+            <input type="text" id="errorCollection" placeholder="Uses default if empty">
+            <label for="errorRecordId">Non-existent Record ID (for 404):</label>
+            <input type="text" id="errorRecordId" value="non_existent_id_12345">
+            <button onclick="simulateError('404')">Simulate 404</button>
+            <button onclick="simulateError('auth')">Simulate Auth Error</button>
+            <button onclick="simulateError('500')">Simulate 500 Server Error</button>
+            <button onclick="simulateError('timeout')">Simulate Timeout</button>
+            <h3>Error Simulation Response:</h3>
+            <pre id="errorResponse"></pre>
+        </div>
+
+        <div class="section" id="general-log-section">
+            <h2>General Log</h2>
+            <button onclick="clearGeneralLog()">Clear Log</button>
+            <div id="generalLog" class="log-area"></div>
+        </div>
+    </div>
+
+    <script>
+        let sseSource = null;
+        let lastCreatedLargeRecordId = null;
+
+        // --- Configuration ---
+        function getApiBaseUrl() { return document.getElementById('apiBaseUrl').value || '/api/stress'; }
+        function getAuthToken() { return document.getElementById('authToken').value; }
+        function getDefaultCollection() { return document.getElementById('defaultCollection').value || 'stress_test_items'; }
+
+        // --- Logging ---
+        function log(message, data) {
+            const logArea = document.getElementById('generalLog');
+            const entry = document.createElement('div');
+            const timestamp = new Date().toISOString();
+            entry.innerHTML = `<strong>${timestamp}:</strong> ${message}`;
+            if (data) {
+                const dataPre = document.createElement('pre');
+                dataPre.textContent = JSON.stringify(data, null, 2);
+                entry.appendChild(dataPre);
+            }
+            logArea.appendChild(entry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+        function clearGeneralLog() {
+            document.getElementById('generalLog').innerHTML = '';
+        }
+
+        // --- API Helper ---
+        async function makeRequest(endpoint, method = 'GET', body = null, customHeaders = {}) {
+            const baseUrl = getApiBaseUrl();
+            const token = getAuthToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                ...customHeaders
+            };
+            if (token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
+
+            log(`Request: ${method} ${baseUrl}${endpoint}`, body);
+            try {
+                const options = { method, headers };
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                const response = await fetch(`${baseUrl}${endpoint}`, options);
+                const responseData = response.status === 204 ? {} : await response.json().catch(() => ({ parseError: "Failed to parse JSON response" }));
+                
+                log(`Response: ${response.status} ${response.statusText}`, responseData);
+                return { status: response.status, data: responseData, ok: response.ok };
+            } catch (error) {
+                log('Network/Fetch Error:', { message: error.message, stack: error.stack });
+                return { status: 0, data: { error: 'Network error', message: error.message }, ok: false };
+            }
+        }
+
+        // --- CRUD Operations ---
+        function getCrudCollection() { return document.getElementById('crudCollection').value || getDefaultCollection(); }
+        async function createRecord() {
+            const payload = JSON.parse(document.getElementById('crudPayload').value);
+            const collection = getCrudCollection();
+            const result = await makeRequest(`/records/${collection}`, 'POST', payload);
+            document.getElementById('crudResponse').textContent = JSON.stringify(result, null, 2);
+        }
+        async function getRecord() {
+            const recordId = document.getElementById('crudRecordId').value;
+            if (!recordId) { alert('Record ID is required for GET.'); return; }
+            const collection = getCrudCollection();
+            const result = await makeRequest(`/records/${collection}/${recordId}`);
+            document.getElementById('crudResponse').textContent = JSON.stringify(result, null, 2);
+        }
+        async function updateRecord() {
+            const recordId = document.getElementById('crudRecordId').value;
+            if (!recordId) { alert('Record ID is required for UPDATE.'); return; }
+            const payload = JSON.parse(document.getElementById('crudPayload').value);
+            const collection = getCrudCollection();
+            const result = await makeRequest(`/records/${collection}/${recordId}`, 'PUT', payload);
+            document.getElementById('crudResponse').textContent = JSON.stringify(result, null, 2);
+        }
+        async function deleteRecord() {
+            const recordId = document.getElementById('crudRecordId').value;
+            if (!recordId) { alert('Record ID is required for DELETE.'); return; }
+            const collection = getCrudCollection();
+            const result = await makeRequest(`/records/${collection}/${recordId}`, 'DELETE');
+            document.getElementById('crudResponse').textContent = JSON.stringify(result, null, 2);
+        }
+
+        // --- List Records ---
+        function getListCollection() { return document.getElementById('listCollection').value || getDefaultCollection(); }
+        async function listRecords() {
+            const query = document.getElementById('listQuery').value;
+            const collection = getListCollection();
+            const result = await makeRequest(`/records/${collection}?${query}`);
+            document.getElementById('listResponse').textContent = JSON.stringify(result, null, 2);
+        }
+
+        // --- Large Payload Test ---
+        function getLargePayloadCollection() { return document.getElementById('largePayloadCollection').value || getDefaultCollection(); }
+        function generateLargePayload(sizeKB) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let content = '';
+            const targetBytes = sizeKB * 1024;
+            while (content.length < targetBytes) {
+                content += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return { data: content.substring(0, targetBytes), timestamp: new Date().toISOString() };
+        }
+        async function createLargeRecord() {
+            const sizeKB = parseInt(document.getElementById('largePayloadSize').value, 10);
+            const payload = generateLargePayload(sizeKB);
+            const collection = getLargePayloadCollection();
+            const result = await makeRequest(`/large-payload/${collection}`, 'POST', payload);
+            document.getElementById('largePayloadResponse').textContent = JSON.stringify({status: result.status, dataSummary: {id: result.data?.id, length: result.data?.data?.length}}, null, 2);
+            if (result.ok && result.data?.id) {
+                lastCreatedLargeRecordId = result.data.id;
+                document.getElementById('largeRecordId').value = lastCreatedLargeRecordId;
+            }
+        }
+        async function getLargeRecord() {
+            if (!lastCreatedLargeRecordId) {
+                alert('Create a large record first to get its ID.');
+                return;
+            }
+            const collection = getLargePayloadCollection();
+            const result = await makeRequest(`/large-payload/${collection}/${lastCreatedLargeRecordId}`);
+            document.getElementById('largePayloadResponse').textContent = JSON.stringify({status: result.status, dataSummary: {id: result.data?.id, length: result.data?.data?.length}}, null, 2);
+        }
+
+
+        // --- Concurrency Test ---
+        function getConcurrencyCollection() { return document.getElementById('concurrencyCollection').value || getDefaultCollection(); }
+        async function runConcurrencyTest() {
+            const numRequests = parseInt(document.getElementById('numConcurrentRequests').value, 10);
+            const collection = getConcurrencyCollection();
+            const idPrefix = document.getElementById('concurrencyRecordIdPrefix').value;
+            const resultsArea = document.getElementById('concurrencyResults');
+            resultsArea.innerHTML = 'Running...';
+            const promises = [];
+
+            for (let i = 0; i < numRequests; i++) {
+                // For GET, we assume records like 'item_0', 'item_1' exist or backend handles it.
+                // For a true stress test, these might be POSTs or a mix. This is a GET example.
+                promises.push(
+                    makeRequest(`/records/${collection}/${idPrefix}${i}`)
+                        .then(result => ({ i, result }))
+                );
+            }
+
+            const allResults = await Promise.allSettled(promises);
+            resultsArea.innerHTML = ''; // Clear "Running..."
+            allResults.forEach(item => {
+                const div = document.createElement('div');
+                if (item.status === 'fulfilled') {
+                    const { i, result } = item.value;
+                    div.textContent = `Req ${i + 1}: Status ${result.status} - ${result.ok ? 'OK' : 'Error'}`;
+                    if (!result.ok) console.error(`Concurrency test req ${i+1} failed:`, result.data);
+                } else {
+                    div.textContent = `Req failed to execute: ${item.reason}`;
+                    console.error('Concurrency test promise rejected:', item.reason);
+                }
+                resultsArea.appendChild(div);
+            });
+            log(`Concurrency test completed for ${numRequests} requests.`);
+        }
+
+        // --- SSE ---
+        function updateSseStatus(status, isError = false, isConnected = false) {
+            const statusText = document.getElementById('sseStatus');
+            const statusIndicator = document.getElementById('sseStatusIndicator');
+            statusText.textContent = status;
+            statusIndicator.className = 'status-indicator'; // Reset
+            if (isError) statusIndicator.classList.add('status-error');
+            else if (isConnected) statusIndicator.classList.add('status-ok');
+            else statusIndicator.classList.add('status-neutral');
+
+            document.getElementById('connectSseButton').disabled = isConnected;
+            document.getElementById('disconnectSseButton').disabled = !isConnected;
+        }
+
+        function connectSSE() {
+            if (sseSource) {
+                log('SSE already connected or connecting.');
+                return;
+            }
+            const baseUrl = getApiBaseUrl();
+            const token = getAuthToken();
+            let sseUrl = `${baseUrl}/sse-stream`;
+            
+            // Note: EventSource doesn't easily support custom headers like Authorization for GET.
+            // The backend /sse-stream endpoint might need to handle auth via query param or cookie if Bearer token is strict.
+            // For this demo, we assume the backend's SSE endpoint might not require the same Bearer token or has another auth mechanism.
+            // If it DOES require it, this part needs a more complex solution (e.g. backend proxy that adds header, or different SSE client lib).
+            // Or, if the Bun server can read the header for SSE from EventSource (some can, some can't directly).
+            // A common workaround is passing token as a query parameter if server supports it: e.g. sseUrl += `?token=${token}`
+            // For now, we proceed without adding the Authorization header directly to EventSource.
+
+            log(`Connecting to SSE: ${sseUrl}`);
+            sseSource = new EventSource(sseUrl); // No direct header support here.
+            updateSseStatus('Connecting...', false, false);
+
+            sseSource.onopen = function() {
+                updateSseStatus('Connected', false, true);
+                log('SSE Connection Opened.');
+            };
+
+            sseSource.onerror = function(event) {
+                updateSseStatus('Error / Disconnected', true, false);
+                log('SSE Error:', event);
+                // sseSource.close(); // EventSource might automatically try to reconnect depending on server.
+                // sseSource = null; // Uncomment if you want to force manual reconnect.
+            };
+
+            sseSource.onmessage = function(event) { // Default message handler
+                const messageList = document.getElementById('sseMessages');
+                const newItem = document.createElement('li');
+                newItem.textContent = `[message] ${event.data}`;
+                messageList.appendChild(newItem);
+                messageList.scrollTop = messageList.scrollHeight;
+                log('SSE Message (default):', { id: event.lastEventId, data: event.data });
+            };
+            
+            // Example for custom named events, if your backend sends them
+            sseSource.addEventListener('custom_event_name', function(event) {
+                const messageList = document.getElementById('sseMessages');
+                const newItem = document.createElement('li');
+                newItem.innerHTML = `<strong>[${event.type}]</strong> ${event.data}`;
+                messageList.appendChild(newItem);
+                messageList.scrollTop = messageList.scrollHeight;
+                log(`SSE Message (${event.type}):`, { id: event.lastEventId, data: event.data });
+            });
+        }
+
+        function disconnectSSE() {
+            if (sseSource) {
+                sseSource.close();
+                sseSource = null;
+                updateSseStatus('Disconnected', false, false);
+                log('SSE Connection Closed by client.');
+            }
+        }
+
+        // --- Error Simulation ---
+        function getErrorCollection() { return document.getElementById('errorCollection').value || getDefaultCollection(); }
+        async function simulateError(type) {
+            let result;
+            const collection = getErrorCollection();
+            const recordId = document.getElementById('errorRecordId').value;
+
+            switch (type) {
+                case '404':
+                    result = await makeRequest(`/error/404/${collection}/${recordId}`);
+                    break;
+                case 'auth':
+                    result = await makeRequest('/error/auth');
+                    break;
+                case '500':
+                    result = await makeRequest('/error/500');
+                    break;
+                case 'timeout':
+                    result = await makeRequest('/error/timeout');
+                    break;
+                default:
+                    alert('Unknown error type to simulate.');
+                    return;
+            }
+            document.getElementById('errorResponse').textContent = JSON.stringify(result, null, 2);
+        }
+
+        // --- Initial Setup ---
+        window.onload = () => {
+            log('Stress test page loaded.');
+            // You could potentially load initial config from backend here if needed
+            // e.g., makeRequest('/config').then(res => { if(res.ok) { /* update UI */ }});
+        };
+
+    </script>
+</body>
+</html>

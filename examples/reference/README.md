@@ -6,6 +6,7 @@ These files are reference implementations from the official Datastar SDK. They d
 - `node.js` - Example of using Datastar with Node.js
 
 These examples are helpful for understanding how to:
+
 1. Set up a server to handle Datastar requests
 2. Read signals from requests
 3. Generate Server-Sent Events (SSE) responses
