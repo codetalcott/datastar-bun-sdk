@@ -25,6 +25,7 @@ bun test routes_examples/routes_examples_bun.test.ts
 ```
 
 The tests verify that:
+
 1. The server serves the HTML page correctly
 2. The server handles SSE requests to merge endpoints
 3. The server returns 404 for unknown paths
@@ -39,6 +40,7 @@ The Bun example demonstrates:
 4. Merging fragments based on signal values
 
 This implementation leverages Bun's built-in APIs including:
+
 - `Bun.serve()` for the HTTP server
 - `TransformStream` for SSE streaming
 - Native Response and Request objects

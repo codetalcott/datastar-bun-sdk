@@ -45,7 +45,7 @@
     "type": "git",
     "url": "git+https://github.com/codetalcott/datastar-bun-sdk.git"
   },
-  "author": "wim talcott",
+  "author": "wm talcott",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/codetalcott/datastar-bun-sdk/issues"
