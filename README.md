@@ -2,6 +2,14 @@
 
 A Bun-optimized SDK for interacting with Datastar services. This SDK provides a TypeScript interface for Datastar's realtime (SSE) hypermedia capabilities.
 
+## Project Status
+
+> ⚠️ **DEVELOPMENT PREVIEW** ⚠️  
+>
+> This SDK is currently in early development and **not ready for production use**. It's being shared for evaluation and feedback purposes only. If extensive testing demonstrates that this SDK adds value to Bun-based Datastar stacks, it will be submitted for inclusion in the list of officially validated Datastar SDKs.
+>
+> Breaking changes may occur between versions without notice during this phase.
+
 ## Features
 
 - **Bun-Optimized**: Leverages Bun's native fetch API and performance features
