@@ -11,6 +11,7 @@ The `_extractAndProcessEventsFromBuffer` method accumulates data in a `buffer`. 
 
 **Suggestion:**
 Implement a configurable maximum buffer size. If the buffer exceeds this size, the client should:
+
 1. Emit an error (e.g., `DatastarSSEError('SSE buffer exceeded maximum size')`).
 2. Abort the current connection (e.g., `this.controller?.abort('buffer_overflow')`).
 3. Clear the buffer.
@@ -38,6 +39,7 @@ private _extractAndProcessEventsFromBuffer(buffer: string): string {
 ```
 
 And update `SSEClientOptions` in `src/types.ts`:
+
 ```typescript
 export interface SSEClientOptions {
   // ... existing options
@@ -52,10 +54,12 @@ When the `ReadableStream` in `_processEventStream` reports `done: true`, it sign
 
 **Suggestion:**
 While reconnection is often desired, providing a more specific event or slightly different handling for a graceful server close could be beneficial.
+
 1. Emit a distinct event (e.g., `close` with a specific reason like `server_disconnected`) when the stream ends gracefully.
 2. Only attempt reconnection if `isExplicitlyClosed` is `false`.
 
 **Example Implementation Snippet (`_processEventStream`):**
+
 ```typescript
 // ...
 if (done) {
@@ -85,10 +89,12 @@ In the `connect()` method, if `response.json()` fails when parsing an *error* re
 
 **Suggestion:**
 Improve error handling when parsing the error response body:
+
 1. Attempt to read the error body as text first.
 2. If JSON parsing of the text fails, emit a `warning` or a more specific error, but still throw an error based on the HTTP status (e.g., `DatastarAuthenticationError` or `DatastarSSEError`) including the original status and the raw text body if JSON parsing failed.
 
 **Example Implementation Snippet (`connect()` error handling block):**
+
 ```typescript
 // ...
 if (!response.ok) {
@@ -132,6 +138,7 @@ if (!response.ok) {
 }
 // ...
 ```
+
 *(Note: This requires `DatastarSSEError` and `DatastarAuthenticationError` constructors to potentially accept `status` and `body` arguments consistently).*
 
 ## Performance Considerations
@@ -145,6 +152,7 @@ For multi-line `data` fields in SSE events, the current code `event.data = event
 For scenarios with extremely large multi-line data, consider accumulating data lines in an array and then joining them. For typical SSE message sizes, the current approach is clear and likely sufficient.
 
 **Example Implementation Snippet (`_parseEvent`):**
+
 ```typescript
 // In _parseEvent, when initializing 'event'
 const event: Partial<SSEEvent> & { dataLines?: string[] } = {
@@ -198,6 +206,7 @@ The current code uses `NodeJS.Timeout` for `reconnectTimer` and `heartbeatTimer`
 Use `ReturnType<typeof setTimeout>` for timer types. This is a standard TypeScript utility type that correctly infers the return type of `setTimeout` in any JavaScript environment.
 
 **Example:**
+
 ```typescript
 private reconnectTimer?: ReturnType<typeof setTimeout>;
 private heartbeatTimer?: ReturnType<typeof setTimeout>;
@@ -210,7 +219,9 @@ private heartbeatTimer?: ReturnType<typeof setTimeout>;
 
 **Suggestion:**
 Implement a more flexible logging strategy:
-*   **Option 1 (Simple):** Add a `debug` or `logLevel` option to `SSEClientOptions`. Only log if the level is appropriate.
+
+* **Option 1 (Simple):** Add a `debug` or `logLevel` option to `SSEClientOptions`. Only log if the level is appropriate.
+
     ```typescript
     // In constructor
     this.debugMode = options.debugMode || false;
@@ -220,7 +231,8 @@ Implement a more flexible logging strategy:
       console.log('[SSE] Reconnecting...');
     }
     ```
-*   **Option 2 (Advanced):** Allow a custom logger function to be passed in `SSEClientOptions`. This logger would conform to an interface (e.g., `{ log(message), error(message), warn(message) }`). If no logger is provided, it could default to `console` or no-op.
+
+* **Option 2 (Advanced):** Allow a custom logger function to be passed in `SSEClientOptions`. This logger would conform to an interface (e.g., `{ log(message), error(message), warn(message) }`). If no logger is provided, it could default to `console` or no-op.
 
 ### 3. Consistent Error Object Structure
 
@@ -231,6 +243,7 @@ Custom error classes like `DatastarSSEError` and `DatastarAuthenticationError` c
 Ensure constructors for custom errors consistently accept and store relevant information like `status`, `body`, or `isRetryable`. This makes error handling by the SDK consumer more predictable.
 
 Example for `DatastarSSEError`:
+
 ```typescript
 // src/types.ts
 export class DatastarSSEError extends Error {
