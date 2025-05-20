@@ -1,0 +1,14 @@
+# Ignore everything by default
+*
+
+# Include the dist directory (built files)
+!dist/
+!dist/**/*
+
+# Include documentation
+!README.md
+!LICENSE
+
+# Exclude test files that might be in dist
+dist/**/*.test.*
+dist/**/*.spec.*

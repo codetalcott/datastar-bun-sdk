@@ -1,0 +1,19 @@
+# Bun configuration file
+# https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Use exact versions for dependencies
+exact = true
+
+[test]
+# Include all files ending with .test.ts
+include = ["**/*.test.ts"]
+# Configuration for the test runner
+coverage = true
+# Execute tests in the same order
+# Helps ensure stable test runs
+serial = false
+
+[debug]
+# Enable source maps
+sourcemap = true
