@@ -9,6 +9,36 @@
 !README.md
 !LICENSE
 
-# Exclude test files that might be in dist
+# Include package.json
+!package.json
+
+# Exclude test files and their artifacts
 dist/**/*.test.*
 dist/**/*.spec.*
+coverage/
+.nyc_output/
+
+# Exclude specific development files/folders
+node_modules/
+src/
+scripts/
+examples/
+.github/
+.vscode/
+.idea/
+.DS_Store
+thumbs.db
+
+# Exclude configuration files
+tsconfig*.json
+bunfig.toml
+bun.lockb
+.eslintrc*
+.prettierrc*
+.editorconfig
+jest.config.*
+.env*
+
+# Exclude all hidden files
+.*
+!.npmignore

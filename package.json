@@ -37,7 +37,9 @@
     "test:server": "bun run src/test/testServer.ts",
     "typecheck": "tsc --noEmit",
     "dev": "bun --watch src/index.ts",
-    "prepublishOnly": "bun run build"
+    "validate": "bun run scripts/validate-package.ts",
+    "sanitize-maps": "bun run scripts/sanitize-maps.ts",
+    "prepublishOnly": "bun run clean && bun run build && bun run validate"
   },
   "devDependencies": {
     "@types/bun": "latest"

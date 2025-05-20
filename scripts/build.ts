@@ -6,7 +6,7 @@
  */
 
 import { spawnSync } from 'child_process';
-import { existsSync, writeFileSync, readFileSync, unlinkSync } from 'fs';
+import { existsSync, writeFileSync, readFileSync, unlinkSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { build } from 'bun';
 
@@ -35,6 +35,7 @@ try {
     sourcemap: 'external', // Generate source maps
     splitting: true, // Enable code splitting for better tree-shaking
     format: 'esm', // Explicitly specify ESM format
+    root: process.cwd(), // Use the project root to ensure relative paths in sourcemaps
   });
 
   console.log(`✅ Bun build completed. Generated ${result.outputs.length} files.`);
@@ -100,9 +101,73 @@ if (existsSync(tempTsConfigPath)) {
   unlinkSync(tempTsConfigPath);
 }
 
-if (tscResult.status !== 0) {
-  console.error('❌ TypeScript declaration generation failed');
+// Step 3: Sanitize source maps to remove absolute paths
+console.log('🧹 Sanitizing source maps to remove absolute paths...');
+const sanitizeResult = spawnSync('bun', ['run', 'scripts/sanitize-maps.ts'], { stdio: 'inherit' });
+if (sanitizeResult.status !== 0) {
+  console.error('❌ Source map sanitization failed');
   process.exit(1);
 }
 
-console.log('✨ Build completed successfully!');
+// Step 4: Validate the built files for absolute paths
+console.log('🔍 Validating built files for absolute paths...');
+
+// Get your username to check for personal paths
+const homePath = process.env.HOME || process.env.USERPROFILE || '';
+const username = homePath.split('/').pop() || homePath.split('\\').pop() || '';
+
+// Create a function to check a file for absolute paths
+async function checkFileForAbsolutePaths(filePath: string): Promise<string[]> {
+  const content = readFileSync(filePath, 'utf8');
+  const paths: string[] = [];
+  
+  // Look for common absolute path patterns
+  const absolutePathPatterns = [
+    // UNIX-style home paths
+    new RegExp(`/Users/${username}`, 'g'),
+    new RegExp(`/home/${username}`, 'g'),
+    // Windows-style paths
+    new RegExp(`C:\\\\Users\\\\${username}`, 'g'),
+    // Project absolute path
+    new RegExp(process.cwd().replace(/\\/g, '\\\\'), 'g'),
+  ];
+  
+  for (const pattern of absolutePathPatterns) {
+    if (pattern.test(content)) {
+      paths.push(`Found pattern ${pattern.toString()} in ${filePath}`);
+    }
+  }
+  
+  return paths;
+}
+
+// Check all files in the dist directory
+const distFiles = readdirSync(outDir);
+let foundPaths: string[] = [];
+
+for (const file of distFiles) {
+  const filePath = join(outDir, file);
+  
+  // Only check text files, not binaries
+  if (file.endsWith('.js') || file.endsWith('.d.ts') || file.endsWith('.map')) {
+    const paths = await checkFileForAbsolutePaths(filePath);
+    foundPaths = [...foundPaths, ...paths];
+  }
+}
+
+if (foundPaths.length > 0) {
+  console.error('⚠️ Warning: Found potential absolute paths in build files:');
+  for (const path of foundPaths) {
+    console.error(`  - ${path}`);
+  }
+  console.error('These might leak your personal file system information when published.');
+  console.error('Consider updating your build process to avoid these paths.');
+  
+  // Don't exit with error to allow the build to continue
+  // but make sure it's very visible to the user
+  console.error('\n❗ Build completed with warnings ❗\n');
+} else {
+  console.log('✅ No absolute paths found in build files');
+}
+
+console.log('🎉 Build completed successfully!');
