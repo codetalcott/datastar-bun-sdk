@@ -26,14 +26,19 @@ function createMockSSEStream(events: string[], onCancel?: () => void): ReadableS
 
 // Mock fetch for SSE tests
 const originalFetch = global.fetch;
-let mockFetchImpl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+let mockFetchImpl: ((input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) | undefined;
 
-global.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+const mockFetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   if (mockFetchImpl) {
     return mockFetchImpl(input, init);
   }
   return new Response(null, { status: 404 });
 });
+
+// Add preconnect property
+mockFetch.preconnect = async () => {};
+
+global.fetch = mockFetch;
 
 describe('SSEClient', () => {
   const SSE_URL = 'https://sse.datastar.test/v1';

@@ -1,19 +1,44 @@
-# Datastar SDK Reference Examples
+# DataStar Bun SDK Examples
 
-These files are reference implementations from the official Datastar SDK. They demonstrate how the SDK is used in different environments:
+This directory contains reference examples for the DataStar Bun SDK.
 
-- `deno.ts` - Example of using Datastar with Deno
-- `node.js` - Example of using Datastar with Node.js
+## Routes Examples
 
-These examples are helpful for understanding how to:
+The `routes_examples` directory contains a Bun implementation of the DataStar routes examples.
 
-1. Set up a server to handle Datastar requests
-2. Read signals from requests
-3. Generate Server-Sent Events (SSE) responses
-4. Implement merge fragments functionality
+### Running the Bun Example
 
-## Implementation Notes
+To run the Bun example:
 
-Our Bun SDK implementation follows similar patterns but optimizes for Bun's specific features and performance characteristics. Use these examples for reference, but note that our implementation may differ in specifics.
+```bash
+bun run routes_examples/routes_examples_bun.ts
+```
 
-These were copied from the official Datastar repository for reference purposes.
+This will start a server on a random available port. Visit the displayed URL in your browser to see the example in action.
+
+### Testing the Bun Example
+
+To test the Bun example:
+
+```bash
+bun test routes_examples/routes_examples_bun.test.ts
+```
+
+The tests verify that:
+1. The server serves the HTML page correctly
+2. The server handles SSE requests to merge endpoints
+3. The server returns 404 for unknown paths
+
+## Implementation Details
+
+The Bun example demonstrates:
+
+1. Setting up a Bun server that serves HTML with DataStar attributes
+2. Processing Server-Sent Events (SSE) using the DataStar Bun SDK
+3. Reading signals from requests
+4. Merging fragments based on signal values
+
+This implementation leverages Bun's built-in APIs including:
+- `Bun.serve()` for the HTTP server
+- `TransformStream` for SSE streaming
+- Native Response and Request objects

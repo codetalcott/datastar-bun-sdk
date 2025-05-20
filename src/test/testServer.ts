@@ -144,9 +144,11 @@ let sdk = new DatastarBunSDK({
 const port = 0;
 
 // Create a server that implements the test endpoint
-const server: Server = Bun.serve({
-  port,
-  async fetch(req) {
+const server: Server = {
+  port: 0,
+  hostname: 'localhost',
+  development: false,
+  fetch: async (req: Request) => {
     const url = new URL(req.url);
     
     // Handle the /test endpoint
@@ -249,7 +251,7 @@ const server: Server = Bun.serve({
     // Handle other endpoints or return 404
     return new Response('Not found', { status: 404 });
   }
-});
+};
 
 // Update the SDK with the actual server port
 sdk = new DatastarBunSDK({

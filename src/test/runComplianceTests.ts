@@ -101,7 +101,8 @@ async function startTestServer(): Promise<any> {
         // Check if server is ready and extract the port
         const serverUrlMatch = output.match(/Test server running at http:\/\/localhost:(\d+)/);
         if (serverUrlMatch) {
-          TEST_SERVER_PORT = parseInt(serverUrlMatch[1], 10);
+          const port = serverUrlMatch[1];
+          TEST_SERVER_PORT = parseInt(port, 10);
           TEST_SERVER_URL = `http://localhost:${TEST_SERVER_PORT}`;
           console.log(`Test server started successfully on port ${TEST_SERVER_PORT}.`);
           resolve(serverProcess);

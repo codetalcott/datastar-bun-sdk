@@ -17,7 +17,7 @@ let mockFetchResponses: Array<{
 
 const originalFetch = global.fetch;
 
-global.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+const mockFetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const urlString = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const method = init?.method?.toUpperCase() || 'GET';
 
@@ -37,6 +37,11 @@ global.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Promis
     console.warn(`[Mock Fetch] ${method} ${urlString} - No specific mock found. Returning 404.`);
     return new Response(JSON.stringify({ error: 'No mock found for this request' }), { status: 404 });
 });
+
+// Add preconnect property
+mockFetch.preconnect = async () => {};
+
+global.fetch = mockFetch;
 
 // --- Helper to create mock SSE stream ---
 function createMockSSEStream(events: string[], onCancel?: () => void): ReadableStream<Uint8Array> {
