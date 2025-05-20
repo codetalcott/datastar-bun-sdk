@@ -1,0 +1,5 @@
+event: info
+
+data: {"message":"GET request processed","params":{"datastar":"{\n  \"events\": [\n    {\n      \"type\": \"removeFragments\",\n      \"selector\": \"#target\",\n      \"useViewTransition\": false\n    }\n  ]\n}"}}
+
+

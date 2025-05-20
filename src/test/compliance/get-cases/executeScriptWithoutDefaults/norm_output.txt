@@ -1,0 +1,2 @@
+event: datastar-execute-script
+data: script console.log('hello');

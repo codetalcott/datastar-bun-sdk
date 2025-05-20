@@ -1,0 +1,4 @@
+event: datastar-merge-fragments
+data: fragments <div>
+data: fragments   <span>Merge</span>
+data: fragments </div>

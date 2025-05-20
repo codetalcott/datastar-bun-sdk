@@ -134,15 +134,18 @@ async function processEvents(sdk: DatastarBunSDK, events: any[]): Promise<string
   return response;
 }
 
-// Create SDK instance
-const sdk = new DatastarBunSDK({
-  apiBaseUrl: 'http://localhost:3000', 
+// Create a dummy SDK instance first - we'll create the real one after the server is started
+let sdk = new DatastarBunSDK({
+  apiBaseUrl: 'http://localhost:0',
   authToken: 'test-token'
 });
 
+// Let Bun choose a random available port
+const port = 0;
+
 // Create a server that implements the test endpoint
 const server: Server = Bun.serve({
-  port: 3000,
+  port,
   async fetch(req) {
     const url = new URL(req.url);
     
@@ -248,8 +251,14 @@ const server: Server = Bun.serve({
   }
 });
 
+// Update the SDK with the actual server port
+sdk = new DatastarBunSDK({
+  apiBaseUrl: `http://localhost:${server.port}`,
+  authToken: 'test-token'
+});
+
 console.log(`Test server running at http://localhost:${server.port}`);
 console.log('To run tests against it:');
 console.log('1. Clone the datastar repo: git clone https://github.com/starfederation/datastar.git');
 console.log('2. Navigate to the test directory: cd datastar/sdk/test');
-console.log('3. Run the tests: ./test-all.sh http://localhost:3000');
+console.log(`3. Run the tests: ./test-all.sh http://localhost:${server.port}`);

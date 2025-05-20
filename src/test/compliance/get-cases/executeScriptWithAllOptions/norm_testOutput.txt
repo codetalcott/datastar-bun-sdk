@@ -1,0 +1,5 @@
+event: info
+
+data: {"message":"GET request processed","params":{"datastar":"{\n  \"events\": [\n    {\n      \"type\": \"executeScript\",\n      \"script\": \"console.log('hello');\",\n      \"eventId\": \"event1\",\n      \"retryDuration\": 2000,\n      \"attributes\": {\n        \"type\": \"text/javascript\",\n        \"blocking\": false\n      },\n      \"autoRemove\": false\n    }\n  ]\n}"}}
+
+

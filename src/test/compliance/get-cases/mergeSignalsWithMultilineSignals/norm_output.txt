@@ -1,0 +1,3 @@
+event: datastar-merge-signals
+
+data: signals {"one":"first\\n signal","two":"second signal"}

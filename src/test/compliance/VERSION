@@ -1,0 +1,6 @@
+Tests copied from Datastar repository on 2025-05-19
+Git commit: 6f505a45a258d0c22da5170c0ae736dbba427f8d
+
+These test cases are used to verify compliance with the Datastar specification.
+Update these tests by running:
+  bun run test:compliance:update

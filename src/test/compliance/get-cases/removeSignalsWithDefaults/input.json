@@ -1,0 +1,10 @@
+{
+  "events": [
+    {
+      "type": "removeSignals",
+      "paths": [
+        "one"
+      ]
+    }
+  ]
+}

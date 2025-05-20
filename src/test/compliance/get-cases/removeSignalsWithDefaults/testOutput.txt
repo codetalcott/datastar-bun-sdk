@@ -1,0 +1,3 @@
+event: info
+data: {"message":"GET request processed","params":{"datastar":"{\n  \"events\": [\n    {\n      \"type\": \"removeSignals\",\n      \"paths\": [\n        \"one\"\n      ]\n    }\n  ]\n}"}}
+

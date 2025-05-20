@@ -1,0 +1,6 @@
+event: datastar-execute-script
+data: script if (true) {
+data: script   console.log('hello');
+data: script }
+
+

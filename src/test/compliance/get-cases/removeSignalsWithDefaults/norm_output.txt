@@ -1,0 +1,2 @@
+event: datastar-remove-signals
+data: paths one

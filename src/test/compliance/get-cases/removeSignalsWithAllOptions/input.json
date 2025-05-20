@@ -1,0 +1,13 @@
+{
+  "events": [
+    {
+      "type": "removeSignals",
+      "paths": [
+        "one",
+        "two.alpha"
+      ],
+      "eventId": "event1",
+      "retryDuration": 2000
+    }
+  ]
+}
