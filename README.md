@@ -230,6 +230,32 @@ Run the unit tests with:
 bun test
 ```
 
+### Coverage Reports
+
+To generate and view code coverage reports:
+
+1. Run tests with the coverage flag:
+
+   ```bash
+   bun test --coverage
+   ```
+
+2. This will create a `coverage/` directory in your project root.
+
+3. Open the HTML report in your browser (usually `coverage/lcov-report/index.html` or `coverage/html/index.html` depending on the reporter Bun uses by default or is configured to use):
+
+   ```bash
+   open coverage/lcov-report/index.html
+   ```
+
+   Or, if the above path doesn't work, try checking the `coverage/` directory for an `html` subfolder:
+
+   ```bash
+   open coverage/html/index.html
+   ```
+
+   (On Windows, you might use `start` instead of `open`; on Linux, `xdg-open`)
+
 ### Compliance Tests
 
 This SDK can be tested against the official Datastar SDK test suite to ensure compatibility:
