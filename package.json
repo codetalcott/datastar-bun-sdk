@@ -1,7 +1,7 @@
 {
   "name": "datastar-bun-sdk",
   "version": "0.1.0",
-  "description": "A Bun-optimized SDK for Datastar",
+  "description": "A Bun-optimized server-side SDK for generating Datastar SSE events",
   "module": "dist/index.js",
   "type": "module",
   "main": "dist/index.js",
@@ -20,7 +20,11 @@
     "bun",
     "typescript",
     "sse",
-    "server-sent-events"
+    "server-sent-events",
+    "server-side",
+    "reactive",
+    "hypermedia",
+    "event-generation"
   ],
   "files": [
     "dist",

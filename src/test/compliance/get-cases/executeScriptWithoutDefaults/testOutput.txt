@@ -1,3 +1,0 @@
-event: info
-data: {"message":"GET request processed","params":{"datastar":"{\n  \"events\": [\n    {\n      \"type\": \"executeScript\",\n      \"script\": \"console.log('hello');\"\n    }\n  ]\n}"}}
-

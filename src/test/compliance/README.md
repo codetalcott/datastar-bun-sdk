@@ -1,9 +1,23 @@
-# Datastar SDK testing suite
+# Datastar Server-Side SDK Compliance Testing Suite
 
-This test suite uses curl(1), cat(1), sh(1), and awk(1) to test that a server respects the SDK spec found in `../README.md`.
+This test suite validates that the datastar-bun-sdk correctly implements server-side Datastar SSE event generation according to the official Datastar SDK specification.
 
-It expects a server to expose a `/test` endpoint that accepts all HTTP methods. The server should then use ReadSignals
-to extract the `events` array. It must then loop through the array of events and use `event.type` to decide which server sent event to use. If the output of the server differs from the expected output, then an error will be printed to the terminal.
+## Requirements
+
+The datastar-bun-sdk MUST be a **server-side SDK** that:
+
+1. **Generates Datastar SSE Events**: Creates properly formatted Server-Sent Events for Datastar frontend consumption
+2. **Implements Event Types**: Supports all standard Datastar event types (mergeSignals, mergeFragments, executeScript, removeSignals, removeFragments)
+3. **Handles Signal Processing**: Can read and process signals from HTTP request bodies
+4. **Provides Test Server**: Exposes a `/test` endpoint for compliance testing
+
+## Test Server Requirements
+
+The SDK must provide a test server that:
+- Exposes a `/test` endpoint accepting all HTTP methods
+- Uses the SDK's `readSignals()` function to extract the `events` array from requests
+- Loops through events and uses `event.type` to generate appropriate Datastar SSE responses
+- Returns properly formatted `text/event-stream` responses with correct Content-Type headers
 
 ## Usage
 

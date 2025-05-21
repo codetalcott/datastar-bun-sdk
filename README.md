@@ -1,6 +1,6 @@
 # Datastar Bun SDK
 
-A Bun-optimized SDK for interacting with Datastar services. This SDK provides a TypeScript interface for Datastar's realtime (SSE) hypermedia capabilities.
+A Bun-optimized server-side SDK for generating Datastar SSE events. This SDK provides a TypeScript interface for creating Datastar-compatible Server-Sent Events that power reactive frontend applications.
 
 ## Project Status
 
@@ -12,15 +12,15 @@ A Bun-optimized SDK for interacting with Datastar services. This SDK provides a 
 
 ## Features
 
-- **Bun-Optimized**: Leverages Bun's native fetch API and performance features
+- **Server-Side SSE Generation**: Creates properly formatted Datastar Server-Sent Events
+- **Bun-Optimized**: Leverages Bun's native HTTP server and performance features
 - **Type-Safe**: Full TypeScript support for better developer experience
-- **CRUD Operations**: Create, read, update, delete, and query records
-- **SSE Integration**: Real-time updates from Datastar services
-- **Error Handling**: Custom error types for different error conditions
-- **Authentication**: Support for static tokens and token provider functions
-- **Request Retries**: Configurable retry behavior with exponential backoff
-- **Request Timeouts**: Configurable timeout handling for all requests
-- **Compression**: Automatic handling of compressed responses (Brotli, GZip, Deflate)
+- **Event Types**: Support for all standard Datastar events (mergeSignals, mergeFragments, executeScript, removeSignals, removeFragments)
+- **Signal Processing**: Read and process signals from HTTP request bodies
+- **Streaming Responses**: Efficient streaming of SSE events to frontend clients
+- **Error Handling**: Comprehensive error handling with graceful degradation
+- **Compliance Testing**: Built-in compliance testing against official Datastar specifications
+- **High Performance**: Optimized for high-throughput reactive applications
 
 ## Installation
 
@@ -37,174 +37,225 @@ npm install codetalcott/datastar-bun-sdk
 ```typescript
 import { DatastarBunSDK } from 'codetalcott/datastar-bun-sdk';
 
-// Initialize the SDK
-const sdk = new DatastarBunSDK({
-  apiBaseUrl: 'https://api.datastar.example.com/v1',
-  sseUrl: 'https://sse.datastar.example.com/v1',
-  authToken: 'your-auth-token'
+// Create a Datastar SSE event generator
+const generator = new DatastarBunSDK();
+
+// Create an HTTP server that generates Datastar events
+const server = Bun.serve({
+  port: 3000,
+  async fetch(req) {
+    const url = new URL(req.url);
+    
+    if (url.pathname === '/events') {
+      // Read signals from the request
+      const signals = await generator.readSignals(req);
+      
+      // Process events and generate SSE response
+      const events = signals.events || [];
+      const sseResponse = generator.processEvents(events);
+      
+      return new Response(sseResponse, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+    
+    // Serve your HTML page
+    return new Response(html, {
+      headers: { 'Content-Type': 'text/html' },
+    });
+  },
 });
 
-// CRUD operations
-async function main() {
-  try {
-    // Create a record
-    const newRecord = await sdk.createRecord('items', {
-      name: 'Example Item',
-      description: 'This is an example item'
-    });
-    
-    // Get a record
-    const record = await sdk.getRecord('items', newRecord.id);
-    
-    // Update a record
-    const updatedRecord = await sdk.updateRecord('items', newRecord.id, {
-      ...record,
-      name: 'Updated Example Item'
-    });
-    
-    // List records
-    const records = await sdk.listRecords('items', {
-      filter: 'name:Updated*',
-      limit: 10
-    });
-    
-    // Delete a record
-    await sdk.deleteRecord('items', newRecord.id);
-    
-    // Connect to SSE for real-time updates
-    sdk.on('sse_record_updated', (event) => {
-      console.log('Record updated:', event.data);
-    });
-    
-    await sdk.connectSSE();
-    
-    // Later, disconnect from SSE
-    await sdk.disconnectSSE();
-  } catch (error) {
-    console.error('Error:', error);
-  }
+// Generate individual events
+async function generateEvents() {
+  // Merge signals into the frontend state
+  const mergeEvent = generator.mergeSignals({
+    user: { name: 'John', id: 123 },
+    count: 42
+  });
+  
+  // Update DOM fragments
+  const fragmentEvent = generator.mergeFragments(
+    '<div id="content">Updated content</div>'
+  );
+  
+  // Execute JavaScript on the frontend
+  const scriptEvent = generator.executeScript(
+    'console.log("Hello from server!");'
+  );
+  
+  console.log('Generated events:', mergeEvent, fragmentEvent, scriptEvent);
 }
 
-main();
+generateEvents();
 ```
 
-## Configuration Options
+## Event Generation API
+
+### Signal Events
 
 ```typescript
-const sdk = new DatastarBunSDK({
-  // Required
-  authToken: 'your-token', // Or a function: async () => 'your-token'
-  
-  // Optional with defaults
-  apiBaseUrl: 'https://api.datastar.io/v1',
-  sseUrl: 'https://sse.datastar.io/v1',
-  requestTimeout: 30000, // 30 seconds
-  retryOptions: {
-    maxRetries: 3,
-    initialDelay: 1000, // 1 second
-    backoffFactor: 2,
-    maxRetryDelay: 10000 // 10 seconds
+// Merge signals into the frontend state
+const event = generator.mergeSignals(
+  { user: { name: 'John' }, count: 42 },
+  { 
+    eventId: 'signal-update-1',
+    retryDuration: 1000,
+    onlyIfMissing: false 
+  }
+);
+
+// Remove signals from the frontend state
+const removeEvent = generator.removeSignals(
+  ['user.oldProperty', 'temporaryData'],
+  { eventId: 'cleanup-1' }
+);
+```
+
+### Fragment Events
+
+```typescript
+// Merge HTML fragments into the DOM
+const fragmentEvent = generator.mergeFragments(
+  '<div id="content">New content</div>',
+  {
+    selector: '#main-content',
+    mergeMode: 'morph', // 'morph', 'inner', 'outer', 'prepend', 'append'
+    eventId: 'content-update-1'
+  }
+);
+
+// Remove DOM elements
+const removeFragmentEvent = generator.removeFragments(
+  '#obsolete-element',
+  { eventId: 'cleanup-dom' }
+);
+```
+
+### Script Execution
+
+```typescript
+// Execute JavaScript on the frontend
+const scriptEvent = generator.executeScript(
+  'console.log("Hello from server!");',
+  {
+    eventId: 'script-1',
+    retryDuration: 2000,
+    attributes: {
+      type: 'text/javascript',
+      blocking: false
+    },
+    autoRemove: true
+  }
+);
+```
+
+## Signal Processing
+
+### Reading Signals from Requests
+
+```typescript
+// Process signals from HTTP request
+const signals = await generator.readSignals(request);
+
+// Extract events array
+const events = signals.events || [];
+
+// Process each event by type
+for (const event of events) {
+  switch (event.type) {
+    case 'mergeSignals':
+      const sseEvent = generator.mergeSignals(event.signals, {
+        eventId: event.eventId,
+        retryDuration: event.retryDuration,
+        onlyIfMissing: event.onlyIfMissing
+      });
+      break;
+      
+    case 'mergeFragments':
+      const fragmentEvent = generator.mergeFragments(event.fragments, {
+        eventId: event.eventId,
+        selector: event.selector,
+        mergeMode: event.mergeMode
+      });
+      break;
+      
+    case 'executeScript':
+      const scriptEvent = generator.executeScript(event.script, {
+        eventId: event.eventId,
+        retryDuration: event.retryDuration,
+        attributes: event.attributes,
+        autoRemove: event.autoRemove
+      });
+      break;
+  }
+}
+```
+
+## Server Integration
+
+### Bun HTTP Server
+
+```typescript
+import { DatastarBunSDK } from 'codetalcott/datastar-bun-sdk';
+
+const generator = new DatastarBunSDK();
+
+const server = Bun.serve({
+  port: 3000,
+  async fetch(req) {
+    const url = new URL(req.url);
+    
+    // Handle Datastar SSE endpoint
+    if (url.pathname === '/datastar' && req.method === 'POST') {
+      const signals = await generator.readSignals(req);
+      const sseResponse = generator.processEvents(signals.events || []);
+      
+      return new Response(sseResponse, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+    
+    return new Response('Not Found', { status: 404 });
   },
-  // Compression options (all optional)
-  compression: {
-    enabled: true, // Whether to enable compression
-    manualDecompression: false, // Use Bun's automatic decompression (recommended)
-    preferredEncodings: ['br', 'gzip', 'deflate'] // Order of preferred encodings
-  }
-});
-```
-
-## CRUD Operations
-
-### Create Record
-
-```typescript
-const record = await sdk.createRecord<YourType>('collection', {
-  // Record data
-  name: 'Example',
-  properties: {
-    // ...
-  }
-});
-```
-
-### Get Record
-
-```typescript
-const record = await sdk.getRecord<YourType>('collection', 'record-id');
-```
-
-### Update Record
-
-```typescript
-const updatedRecord = await sdk.updateRecord<YourType>('collection', 'record-id', {
-  // Updated record data
-  name: 'Updated Example',
-  properties: {
-    // ...
-  }
-});
-```
-
-### Delete Record
-
-```typescript
-await sdk.deleteRecord('collection', 'record-id');
-```
-
-### List/Query Records
-
-```typescript
-const records = await sdk.listRecords<YourType>('collection', {
-  filter: 'property:value',
-  sort: 'createdAt:desc',
-  limit: 100,
-  offset: 0
-});
-```
-
-## SSE Integration
-
-### Connect to SSE
-
-```typescript
-// Set up event handlers first
-sdk.on('sse_open', () => {
-  console.log('Connected to SSE');
 });
 
-sdk.on('sse_error', (error) => {
-  console.error('SSE error:', error);
-});
-
-sdk.on('sse_record_created', (event) => {
-  console.log('Record created:', event.data);
-});
-
-// Then connect
-await sdk.connectSSE();
+console.log(`Datastar server running on http://localhost:3000`);
 ```
 
-### Disconnect from SSE
+### Express.js Integration
 
 ```typescript
-await sdk.disconnectSSE();
-```
+import express from 'express';
+import { DatastarBunSDK } from 'codetalcott/datastar-bun-sdk';
 
-### SSE with Custom Compression Settings
+const app = express();
+const generator = new DatastarBunSDK();
 
-```typescript
-// Configure SSE client with custom compression settings
-sdk.sse.configure({
-  compression: {
-    enabled: true,
-    manualDecompression: true, // Override automatic decompression
-    preferredEncodings: ['br'] // Only accept Brotli compression
-  }
+app.use(express.json());
+
+app.post('/datastar', async (req, res) => {
+  const signals = await generator.readSignals(req);
+  const sseResponse = generator.processEvents(signals.events || []);
+  
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.send(sseResponse);
 });
 
-// Then connect
-await sdk.connectSSE();
+app.listen(3000, () => {
+  console.log('Datastar server running on http://localhost:3000');
+});
 ```
 
 ## Error Handling

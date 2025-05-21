@@ -29,15 +29,10 @@ export interface DatastarSDKOptions {
   compression?: {
     /** Whether to enable compressed responses (defaults to true) */
     enabled?: boolean;
-    /**
-     * Whether to manually decompress responses (defaults to false).
-     * When false, relies on Bun's automatic decompression.
-     * Set to true only if you encounter issues with Bun's built-in handling.
-     */
-    manualDecompression?: boolean;
     /** 
      * Ordered list of preferred compression encodings.
      * Will be sent as Accept-Encoding header.
+     * Defaults to ['br', 'gzip', 'deflate']
      */
     preferredEncodings?: Array<'br' | 'gzip' | 'deflate'>;
   };
@@ -85,15 +80,10 @@ export interface SSEClientOptions {
   compression?: {
     /** Whether to request and handle compressed responses (defaults to true) */
     enabled?: boolean;
-    /**
-     * Whether to manually decompress responses (defaults to false).
-     * When false, relies on Bun's automatic decompression.
-     * Set to true only if you encounter issues with Bun's built-in handling.
-     */
-    manualDecompression?: boolean;
     /** 
      * Ordered list of preferred compression encodings.
      * Will be sent as Accept-Encoding header.
+     * Defaults to ['br', 'gzip', 'deflate']
      */
     preferredEncodings?: Array<'br' | 'gzip' | 'deflate'>;
   };

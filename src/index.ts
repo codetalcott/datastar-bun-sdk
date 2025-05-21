@@ -24,7 +24,6 @@ const DEFAULT_RETRY_OPTIONS = {
 };
 const DEFAULT_COMPRESSION_OPTIONS = {
   enabled: true,
-  manualDecompression: false,
   preferredEncodings: ['br', 'gzip', 'deflate'] as Array<'br' | 'gzip' | 'deflate'>
 };
 

@@ -1,5 +1,0 @@
-event: info
-
-data: {"message":"GET request processed","params":{"datastar":"{\n  \"events\": [\n    {\n      \"type\": \"removeFragments\",\n      \"selector\": \"#target\",\n      \"eventId\": \"event1\",\n      \"retryDuration\": 2000,\n      \"useViewTransition\": true\n    }\n  ]\n}"}}
-
-

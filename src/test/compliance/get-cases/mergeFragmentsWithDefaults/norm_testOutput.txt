@@ -1,5 +1,0 @@
-event: info
-
-data: {"message":"GET request processed","params":{"datastar":"{\n  \"events\": [\n    {\n      \"type\": \"mergeFragments\",\n      \"fragments\": \"<div>Merge</div>\",\n      \"mergeMode\": \"morph\",\n      \"useViewTransition\": false\n    }\n  ]\n}"}}
-
-

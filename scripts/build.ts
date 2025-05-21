@@ -33,9 +33,10 @@ try {
     target: 'node',
     minify: false, // Usually better to leave unminified for libraries
     sourcemap: 'external', // Generate source maps
-    splitting: true, // Enable code splitting for better tree-shaking
+    splitting: false, // Disable code splitting for single bundle
     format: 'esm', // Explicitly specify ESM format
     root: process.cwd(), // Use the project root to ensure relative paths in sourcemaps
+    naming: 'index.js', // Output as index.js in the outdir
   });
 
   console.log(`✅ Bun build completed. Generated ${result.outputs.length} files.`);
@@ -79,6 +80,10 @@ const buildConfig = {
     declaration: true,
     emitDeclarationOnly: true,
     outDir: './dist',
+    // Generate a single declaration file
+    declarationMap: true,
+    // Ensure proper module resolution
+    moduleResolution: 'node',
   },
   // Only include source files, exclude tests
   include: ['src/**/*.ts'],
@@ -99,6 +104,11 @@ const tscResult = spawnSync(
 // Clean up the temporary tsconfig
 if (existsSync(tempTsConfigPath)) {
   unlinkSync(tempTsConfigPath);
+}
+
+if (tscResult.status !== 0) {
+  console.error('❌ TypeScript declaration generation failed');
+  process.exit(1);
 }
 
 // Step 3: Sanitize source maps to remove absolute paths
@@ -141,15 +151,30 @@ async function checkFileForAbsolutePaths(filePath: string): Promise<string[]> {
   return paths;
 }
 
-// Check all files in the dist directory
-const distFiles = readdirSync(outDir);
+// Check all files in the dist directory recursively
+function getAllFiles(dir: string): string[] {
+  let files: string[] = [];
+  const entries = readdirSync(dir, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files = files.concat(getAllFiles(fullPath));
+    } else {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+const allFiles = getAllFiles(outDir);
 let foundPaths: string[] = [];
 
-for (const file of distFiles) {
-  const filePath = join(outDir, file);
+for (const filePath of allFiles) {
+  const fileName = filePath.split('/').pop() || '';
   
   // Only check text files, not binaries
-  if (file.endsWith('.js') || file.endsWith('.d.ts') || file.endsWith('.map')) {
+  if (fileName.endsWith('.js') || fileName.endsWith('.d.ts') || fileName.endsWith('.map')) {
     const paths = await checkFileForAbsolutePaths(filePath);
     foundPaths = [...foundPaths, ...paths];
   }

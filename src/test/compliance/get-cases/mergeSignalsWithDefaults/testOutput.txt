@@ -1,3 +1,0 @@
-event: info
-data: {"message":"GET request processed","params":{"datastar":"{\n  \"events\": [\n    {\n      \"type\": \"mergeSignals\",\n      \"signals\": {\n        \"one\": 1,\n        \"two\": 2\n      },\n      \"onlyIfMissing\": false\n    }\n  ]\n}"}}
-
