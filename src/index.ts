@@ -22,6 +22,11 @@ const DEFAULT_RETRY_OPTIONS = {
   backoffFactor: 2,
   maxRetryDelay: 10000 // 10 seconds
 };
+const DEFAULT_COMPRESSION_OPTIONS = {
+  enabled: true,
+  manualDecompression: false,
+  preferredEncodings: ['br', 'gzip', 'deflate'] as Array<'br' | 'gzip' | 'deflate'>
+};
 
 export class DatastarBunSDK {
   private options: DatastarSDKOptions;
@@ -49,7 +54,8 @@ export class DatastarBunSDK {
       url: this.options.sseUrl || DEFAULT_SSE_URL,
       headers: {}, // Will be set during connectSSE
       heartbeatInterval: 30000,
-      retryOptions: this.options.retryOptions
+      retryOptions: this.options.retryOptions,
+      compression: DEFAULT_COMPRESSION_OPTIONS
     });
 
     // Setup event forwarding from SSE client

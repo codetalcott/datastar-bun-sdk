@@ -9,6 +9,15 @@ import type {
   SSEEvent 
 } from './types';
 
+// Import zlib for manual decompression if needed
+try {
+  // Use dynamic import for better compatibility
+  // This will be used only if manual decompression is enabled
+  var zlib: typeof import('node:zlib') | null = null;
+} catch (e) {
+  console.warn('[SSE] zlib import failed, manual decompression not available');
+}
+
 export class SSEClient extends EventEmitter {
   private url: string;
   private headers: Record<string, string>;
@@ -18,6 +27,11 @@ export class SSEClient extends EventEmitter {
     initialDelay: number;
     backoffFactor: number;
     maxRetryDelay: number;
+  };
+  private compression: {
+    enabled: boolean;
+    manualDecompression: boolean;
+    preferredEncodings: Array<'br' | 'gzip' | 'deflate'>;
   };
 
   private isExplicitlyClosed: boolean = false;
@@ -39,6 +53,22 @@ export class SSEClient extends EventEmitter {
       backoffFactor: options.retryOptions?.backoffFactor || 2,
       maxRetryDelay: options.retryOptions?.maxRetryDelay || 10000
     };
+    
+    // Set up compression options with defaults
+    this.compression = {
+      enabled: options.compression?.enabled ?? true,
+      manualDecompression: options.compression?.manualDecompression ?? false,
+      preferredEncodings: options.compression?.preferredEncodings ?? ['br', 'gzip', 'deflate']
+    };
+    
+    // If manual decompression is enabled, try to load zlib
+    if (this.compression.enabled && this.compression.manualDecompression && !zlib) {
+      import('node:zlib').then(module => {
+        zlib = module;
+      }).catch(e => {
+        console.warn('[SSE] Failed to import zlib, manual decompression not available');
+      });
+    }
   }
 
   /**
@@ -68,6 +98,11 @@ export class SSEClient extends EventEmitter {
         'Cache-Control': 'no-cache',
         ...this.headers
       };
+      
+      // Add compression headers if enabled
+      if (this.compression.enabled) {
+        headers['Accept-Encoding'] = this.compression.preferredEncodings.join(', ');
+      }
 
       // Add Last-Event-ID header if we have one
       if (this.lastEventId) {
@@ -75,12 +110,21 @@ export class SSEClient extends EventEmitter {
       }
 
       // Fetch from the SSE endpoint
-      const response = await fetch(this.url, {
+      // Prepare fetch options
+      const fetchOptions: RequestInit = {
         method: 'GET',
         headers,
-        signal: this.controller.signal
+        signal: this.controller.signal,
         // Note: We'd like to use cache: 'no-store' here, but it's not in the Bun type definition
-      });
+      };
+      
+      // Add decompress option if supported by Bun
+      // This is a Bun-specific option that may not be in the types
+      if (this.compression.manualDecompression) {
+        (fetchOptions as any).decompress = false;
+      }
+      
+      const response = await fetch(this.url, fetchOptions);
 
       // Handle HTTP errors
       if (!response.ok) {
@@ -129,7 +173,95 @@ export class SSEClient extends EventEmitter {
       
       // Process the event stream
       if (response.body) {
-        await this._processEventStream(response.body);
+        // Check if we need to manually handle compression
+        const contentEncoding = response.headers.get('Content-Encoding');
+        
+        if (this.compression.manualDecompression && contentEncoding) {
+          try {
+            // Check if zlib is available
+            if (!zlib) {
+              throw new DatastarSSEError('Manual decompression requested but zlib is not available');
+            }
+            
+            // Determine compression type
+            let compressionType: 'br' | 'gzip' | 'deflate' | null = null;
+            
+            if (contentEncoding.includes('br')) {
+              compressionType = 'br';
+            } else if (contentEncoding.includes('gzip')) {
+              compressionType = 'gzip';
+            } else if (contentEncoding.includes('deflate')) {
+              compressionType = 'deflate';
+            } else {
+              // Not compressed or unknown format, process normally
+              await this._processEventStream(response.body);
+              return;
+            }
+            
+            // With Node-style streams we need to handle this differently
+            // Instead, we'll convert the response to buffers and decompress manually
+            const chunks: Uint8Array[] = [];
+            const reader = response.body.getReader();
+            
+            // Read all chunks from the response
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (value) chunks.push(value);
+            }
+            
+            // Combine all chunks into a single buffer
+            const buffer = Buffer.concat(chunks);
+            
+            // Decompress the buffer
+            let decompressedBuffer: Buffer;
+            
+            // Ensure zlib is available (TypeScript safety)
+            const zlibInstance = zlib;
+            
+            if (compressionType === 'br') {
+              decompressedBuffer = await new Promise((resolve, reject) => {
+                zlibInstance.brotliDecompress(buffer, (err, result) => {
+                  if (err) reject(err);
+                  else resolve(result);
+                });
+              });
+            } else if (compressionType === 'gzip') {
+              decompressedBuffer = await new Promise((resolve, reject) => {
+                zlibInstance.gunzip(buffer, (err, result) => {
+                  if (err) reject(err);
+                  else resolve(result);
+                });
+              });
+            } else if (compressionType === 'deflate') {
+              decompressedBuffer = await new Promise((resolve, reject) => {
+                zlibInstance.inflate(buffer, (err, result) => {
+                  if (err) reject(err);
+                  else resolve(result);
+                });
+              });
+            } else {
+              // This should never happen due to our earlier check
+              throw new DatastarSSEError(`Unknown compression format: ${contentEncoding}`);
+            }
+            
+            // Create a new ReadableStream from the decompressed buffer
+            const decompressedStream = new ReadableStream({
+              start(controller) {
+                controller.enqueue(decompressedBuffer);
+                controller.close();
+              }
+            });
+            
+            // Process the decompressed stream
+            await this._processEventStream(decompressedStream);
+          } catch (error: any) {
+            throw new DatastarSSEError(`Decompression error: ${error.message}`);
+          }
+        } else {
+          // No manual decompression needed, Bun will handle it automatically
+          await this._processEventStream(response.body);
+        }
       } else {
         throw new DatastarSSEError('No response body received from SSE endpoint');
       }
@@ -218,6 +350,22 @@ export class SSEClient extends EventEmitter {
         ...this.retryOptions,
         ...options.retryOptions
       };
+    }
+    
+    if (options.compression) {
+      this.compression = {
+        ...this.compression,
+        ...options.compression
+      };
+      
+      // If manual decompression was just enabled, try to load zlib
+      if (this.compression.enabled && this.compression.manualDecompression && !zlib) {
+        import('node:zlib').then(module => {
+          zlib = module;
+        }).catch(e => {
+          console.warn('[SSE] Failed to import zlib, manual decompression not available');
+        });
+      }
     }
   }
   

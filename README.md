@@ -20,6 +20,7 @@ A Bun-optimized SDK for interacting with Datastar services. This SDK provides a 
 - **Authentication**: Support for static tokens and token provider functions
 - **Request Retries**: Configurable retry behavior with exponential backoff
 - **Request Timeouts**: Configurable timeout handling for all requests
+- **Compression**: Automatic handling of compressed responses (Brotli, GZip, Deflate)
 
 ## Installation
 
@@ -103,6 +104,12 @@ const sdk = new DatastarBunSDK({
     initialDelay: 1000, // 1 second
     backoffFactor: 2,
     maxRetryDelay: 10000 // 10 seconds
+  },
+  // Compression options (all optional)
+  compression: {
+    enabled: true, // Whether to enable compression
+    manualDecompression: false, // Use Bun's automatic decompression (recommended)
+    preferredEncodings: ['br', 'gzip', 'deflate'] // Order of preferred encodings
   }
 });
 ```
@@ -182,6 +189,22 @@ await sdk.connectSSE();
 
 ```typescript
 await sdk.disconnectSSE();
+```
+
+### SSE with Custom Compression Settings
+
+```typescript
+// Configure SSE client with custom compression settings
+sdk.sse.configure({
+  compression: {
+    enabled: true,
+    manualDecompression: true, // Override automatic decompression
+    preferredEncodings: ['br'] // Only accept Brotli compression
+  }
+});
+
+// Then connect
+await sdk.connectSSE();
 ```
 
 ## Error Handling

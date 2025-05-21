@@ -1,16 +1,45 @@
 // Types for DatastarBunSDK
 
-// SDK Options
+/**
+ * SDK Configuration Options
+ */
 export interface DatastarSDKOptions {
+  /** Base URL for API requests */
   apiBaseUrl?: string;
+  /** URL for Server-Sent Events endpoint */
   sseUrl?: string;
+  /** Authentication token (string or function that returns string or Promise<string>) */
   authToken: string | (() => string | Promise<string>);
+  /** Request timeout in milliseconds */
   requestTimeout?: number;
+  /** Retry configuration for failed requests */
   retryOptions?: {
+    /** Maximum number of retry attempts */
     maxRetries?: number;
+    /** Initial delay between retries in milliseconds */
     initialDelay?: number;
+    /** Exponential backoff factor */
     backoffFactor?: number;
+    /** Maximum retry delay in milliseconds */
     maxRetryDelay?: number;
+  };
+  /**
+   * Compression configuration for SSE connections
+   */
+  compression?: {
+    /** Whether to enable compressed responses (defaults to true) */
+    enabled?: boolean;
+    /**
+     * Whether to manually decompress responses (defaults to false).
+     * When false, relies on Bun's automatic decompression.
+     * Set to true only if you encounter issues with Bun's built-in handling.
+     */
+    manualDecompression?: boolean;
+    /** 
+     * Ordered list of preferred compression encodings.
+     * Will be sent as Accept-Encoding header.
+     */
+    preferredEncodings?: Array<'br' | 'gzip' | 'deflate'>;
   };
 }
 
@@ -29,16 +58,44 @@ export interface RequestOptions {
   headers?: Record<string, string>;
 }
 
-// SSE Client Options
+/**
+ * SSE Client Configuration Options
+ */
 export interface SSEClientOptions {
+  /** URL for the SSE endpoint */
   url: string;
+  /** Request headers to be sent with the SSE request */
   headers?: Record<string, string>;
+  /** Interval in milliseconds to wait before considering connection dead (heartbeat timeout) */
   heartbeatInterval?: number;
+  /** Retry configuration for reconnection attempts */
   retryOptions?: {
+    /** Maximum number of retry attempts */
     maxRetries?: number;
+    /** Initial delay between retries in milliseconds */
     initialDelay?: number;
+    /** Exponential backoff factor */
     backoffFactor?: number;
+    /** Maximum retry delay in milliseconds */
     maxRetryDelay?: number;
+  };
+  /**
+   * Compression configuration for SSE connections
+   */
+  compression?: {
+    /** Whether to request and handle compressed responses (defaults to true) */
+    enabled?: boolean;
+    /**
+     * Whether to manually decompress responses (defaults to false).
+     * When false, relies on Bun's automatic decompression.
+     * Set to true only if you encounter issues with Bun's built-in handling.
+     */
+    manualDecompression?: boolean;
+    /** 
+     * Ordered list of preferred compression encodings.
+     * Will be sent as Accept-Encoding header.
+     */
+    preferredEncodings?: Array<'br' | 'gzip' | 'deflate'>;
   };
 }
 
