@@ -34,10 +34,10 @@ const mockFetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Pro
   return new Response(null, { status: 404 });
 });
 
-// Add preconnect property
-mockFetch.preconnect = async () => {};
+global.fetch = mockFetch as unknown as typeof global.fetch;
 
-global.fetch = mockFetch;
+// Add preconnect property to global fetch
+(global.fetch as any).preconnect = async () => {};
 
 describe('DatastarBunSDK SSE Integration', () => {
   const BASE_API_URL = 'https://api.datastar.test/v1';
@@ -94,13 +94,6 @@ describe('DatastarBunSDK SSE Integration', () => {
     
     // Connect to SSE - don't await as we're using done
     sdk.connectSSE().catch(done);
-  });
-  
-  // Skipping this test for now as it requires more intensive mocks
-  it.skip('should forward SSE events to SDK events', (done) => {
-    const testData = { value: 'test data' };
-    // Simplified test that just verifies event registration
-    done();
   });
   
   it('should forward connection events', (done) => {

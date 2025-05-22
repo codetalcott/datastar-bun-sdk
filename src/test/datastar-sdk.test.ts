@@ -39,9 +39,9 @@ const mockFetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Pro
 });
 
 // Add preconnect property
-mockFetch.preconnect = async () => {};
+(mockFetch as any).preconnect = async () => {};
 
-global.fetch = mockFetch;
+global.fetch = mockFetch as any;
 
 // --- Helper to create mock SSE stream ---
 function createMockSSEStream(events: string[], onCancel?: () => void): ReadableStream<Uint8Array> {
@@ -153,7 +153,7 @@ describe('DatastarBunSDK', () => {
             // Create a spy just for this test with a specific mock implementation
             const fetchSpy = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
                 const urlString = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-                capturedHeaders = new Headers(init?.headers as HeadersInit);
+                capturedHeaders = init?.headers ? new Headers(init.headers) : null;
                 
                 // Still use our mockFetchResponses mechanism
                 const matchedMock = mockFetchResponses.find(m =>
@@ -168,7 +168,8 @@ describe('DatastarBunSDK', () => {
             });
             
             // Override global.fetch just for this test
-            global.fetch = fetchSpy;
+            (fetchSpy as any).preconnect = async () => {};
+            global.fetch = fetchSpy as any;
             
             try {
                 mockFetchResponses.push({
@@ -179,7 +180,8 @@ describe('DatastarBunSDK', () => {
                 await customSdk.getRecord('authcheck', '1');
                 
                 expect(fetchSpy).toHaveBeenCalled();
-                expect(capturedHeaders?.get('Authorization')).toBe(`Bearer ${DEFAULT_TOKEN}`);
+                expect(capturedHeaders).not.toBeNull();
+                expect(capturedHeaders!.get('Authorization')).toBe(`Bearer ${DEFAULT_TOKEN}`);
             } finally {
                 // Restore the original mock
                 global.fetch = originalFetch;
@@ -251,12 +253,14 @@ describe('DatastarBunSDK', () => {
             
             // Mock fetch to capture the payload
             const originalFetch = global.fetch;
-            global.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+            const payloadMock = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
                 if (init?.body) {
                     capturedPayload = JSON.parse(init.body as string);
                 }
                 return new Response(JSON.stringify(responseRecord), { status: 201 });
             });
+            (payloadMock as any).preconnect = async () => {};
+            global.fetch = payloadMock as any;
             
             try {
                 await sdk.createRecord('items', payload);
@@ -301,7 +305,7 @@ describe('DatastarBunSDK', () => {
             
             // Mock fetch to capture the payload and method
             const originalFetch = global.fetch;
-            global.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+            const updateMock = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
                 capturedUrl = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
                 capturedMethod = init?.method;
                 
@@ -311,6 +315,8 @@ describe('DatastarBunSDK', () => {
                 
                 return new Response(JSON.stringify(responseRecord), { status: 200 });
             });
+            (updateMock as any).preconnect = async () => {};
+            global.fetch = updateMock as any;
             
             try {
                 await sdk.updateRecord('items', recordId, updatePayload);
@@ -372,10 +378,12 @@ describe('DatastarBunSDK', () => {
             
             // Mock to capture the full URL with query params
             const originalFetch = global.fetch;
-            global.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+            const listMock = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
                 capturedUrl = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
                 return new Response(JSON.stringify(responseRecords), { status: 200 });
             });
+            (listMock as any).preconnect = async () => {};
+            global.fetch = listMock as any;
             
             try {
                 const records = await sdk.listRecords('tasks', queryParams);
@@ -469,9 +477,11 @@ describe('DatastarBunSDK', () => {
         it('should throw DatastarConnectionError for network failures', async () => {
             // Mock a network failure
             const originalFetch = global.fetch;
-            global.fetch = mock(async () => {
+            const networkErrorMock = mock(async () => {
                 throw new Error("Network error");
             });
+            (networkErrorMock as any).preconnect = async () => {};
+            global.fetch = networkErrorMock as any;
             
             try {
                 await sdk.getRecord('network', 'error');
@@ -488,11 +498,13 @@ describe('DatastarBunSDK', () => {
         it('should handle timeout exceptions correctly', async () => {
             // Mock implementation that immediately throws an AbortError
             const originalFetch = global.fetch;
-            global.fetch = mock(async () => {
+            const abortMock = mock(async () => {
                 const error = new Error("The operation was aborted");
                 error.name = "AbortError";
                 throw error;
             });
+            (abortMock as any).preconnect = async () => {};
+            global.fetch = abortMock as any;
             
             try {
                 await sdk.getRecord('timeout', 'test');
@@ -530,7 +542,7 @@ describe('DatastarBunSDK', () => {
             
             // For request with custom timeout, directly check the options passed to the fetch function
             let timeoutOptions: RequestInit | undefined;
-            global.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+            const timeoutMock = mock(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
                 const urlString = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
                 
                 // Store the options we're testing
@@ -549,6 +561,8 @@ describe('DatastarBunSDK', () => {
                 
                 return new Response(JSON.stringify({ id: 'default' }), { status: 200 });
             });
+            (timeoutMock as any).preconnect = async () => {};
+            global.fetch = timeoutMock as any;
             
             try {
                 // Make a request to capture timeout options
