@@ -1,6 +1,7 @@
-# Datastar Server-Side SDK Compliance Testing Suite
+# Datastar SDK testing suite
 
-This test suite validates that the datastar-bun-sdk correctly implements server-side Datastar SSE event generation according to the official Datastar SDK specification.
+This test suite uses curl(1), cat(1), sh(1), and awk(1) to test that a server respects the SDK spec found in `../README.md`.
+It expects a server to expose a `/test` endpoint that accepts all HTTP methods. The server should then use ReadSignals
 
 ## Requirements
 

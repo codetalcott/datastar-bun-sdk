@@ -10,18 +10,6 @@ A Bun-optimized server-side SDK for generating Datastar SSE events. This SDK pro
 >
 > Breaking changes may occur between versions without notice during this phase.
 
-## Features
-
-- **Server-Side SSE Generation**: Creates properly formatted Datastar Server-Sent Events
-- **Bun-Optimized**: Leverages Bun's native HTTP server and performance features
-- **Type-Safe**: Full TypeScript support for better developer experience
-- **Event Types**: Support for all standard Datastar events (mergeSignals, mergeFragments, executeScript, removeSignals, removeFragments)
-- **Signal Processing**: Read and process signals from HTTP request bodies
-- **Streaming Responses**: Efficient streaming of SSE events to frontend clients
-- **Error Handling**: Comprehensive error handling with graceful degradation
-- **Compliance Testing**: Built-in compliance testing against official Datastar specifications
-- **High Performance**: Optimized for high-throughput reactive applications
-
 ## Installation
 
 ```bash
